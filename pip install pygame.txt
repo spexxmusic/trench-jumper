@@ -1,0 +1,106 @@
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Set up the display
+WIDTH = 400
+HEIGHT = 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Doodle Jump Clone")
+
+# Colors
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+BLACK = (0, 0, 0)
+
+# Player properties
+class Player:
+    def __init__(self):
+        self.width = 40
+        self.height = 40
+        self.x = WIDTH // 2 - self.width // 2
+        self.y = HEIGHT - 100
+        self.velocity_y = 0
+        self.jump_power = -15
+        self.gravity = 0.5
+
+# Platform properties
+class Platform:
+    def __init__(self, y):
+        self.width = 80
+        self.height = 20
+        self.x = random.randint(0, WIDTH - self.width)
+        self.y = y
+
+# Game variables
+player = Player()
+platforms = [Platform(HEIGHT - 50)]  # Starting platform
+scroll_speed = 2
+score = 0
+clock = pygame.time.Clock()
+
+# Game loop
+running = True
+while running:
+    # Event handling
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Player movement
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and player.x > 0:
+        player.x -= 5
+    if keys[pygame.K_RIGHT] and player.x < WIDTH - player.width:
+        player.x += 5
+
+    # Apply gravity
+    player.velocity_y += player.gravity
+    player.y += player.velocity_y
+
+    # Platform collision and jumping
+    for platform in platforms[:]:
+        if (player.y + player.height > platform.y and 
+            player.y + player.height < platform.y + platform.height and
+            player.x + player.width > platform.x and 
+            player.x < platform.x + platform.width and 
+            player.velocity_y > 0):
+            player.velocity_y = player.jump_power
+
+    # Screen scrolling
+    if player.y < HEIGHT // 2 and player.velocity_y < 0:
+        scroll = -player.velocity_y
+        player.y += scroll
+        for platform in platforms:
+            platform.y += scroll
+        score += int(scroll)
+
+    # Generate new platforms
+    if platforms[-1].y > 100:
+        platforms.append(Platform(platforms[-1].y - random.randint(80, 120)))
+
+    # Remove off-screen platforms
+    platforms = [p for p in platforms if p.y < HEIGHT]
+
+    # Game over if player falls
+    if player.y > HEIGHT:
+        running = False
+
+    # Drawing
+    screen.fill(WHITE)
+    pygame.draw.rect(screen, GREEN, (player.x, player.y, player.width, player.height))
+    for platform in platforms:
+        pygame.draw.rect(screen, BLACK, (platform.x, platform.y, platform.width, platform.height))
+    
+    # Draw score
+    font = pygame.font.Font(None, 36)
+    score_text = font.render(f"Score: {score}", True, BLACK)
+    screen.blit(score_text, (10, 10))
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()
+print(f"Game Over! Final Score: {score}")
